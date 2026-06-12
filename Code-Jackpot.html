@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeurTeur-jackpot</title>
+    <style>
+        body {
+            /* Fond sombre violet/noir */
+            background: linear-gradient(135deg, #0d0514 0%, #1a0b1c 100%);
+            color: #fce4ec;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            position: relative;
+            
+            /* Bloquer la sélection */
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* --- ANIMATION DES PÉTALES --- */
+        .petal {
+            position: absolute;
+            background-color: #ff7eb3;
+            border-radius: 15px 0 15px 0;
+            opacity: 0.6;
+            pointer-events: none;
+            animation: fall linear infinite;
+            z-index: 1;
+            box-shadow: 0 0 8px rgba(255, 126, 179, 0.5);
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 0.6; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* --- STYLES DES ÉCRANS --- */
+        #auth-screen, #admin-screen, #shop-screen, #daily-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 5, 20, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(8px);
+            transition: opacity 0.5s ease;
+        }
+
+        .auth-box {
+            background: #1e1024;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(255, 71, 133, 0.2);
+            border: 2px solid #ff4785;
+            text-align: center;
+            width: 300px;
+            position: relative;
+            z-index: 101;
+            transition: transform 0.3s ease;
+        }
+
+        .shop-box {
+            width: 400px;
+        }
+
+        .auth-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 30px rgba(255, 71, 133, 0.4);
+        }
+
+        .auth-box h2 {
+            color: #ff7eb3;
+            text-shadow: 0 0 10px rgba(255, 126, 179, 0.3);
+            margin-top: 0;
+        }
+
+        .auth-box input {
+            background: #2a1632;
+            color: #fce4ec;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #5a305e;
+            border-radius: 8px;
+            width: 90%;
+            margin-bottom: 15px;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .auth-box input:focus {
+            border-color: #ff4785;
+            box-shadow: 0 0 12px rgba(255, 71, 133, 0.5);
+        }
+
+        .auth-box p { margin-top: 20px; font-size: 0.9em; color: #d1b3c4; }
+        .auth-box a { color: #ff4785; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .auth-box a:hover { color: #ff7eb3; text-shadow: 0 0 8px rgba(255,126,179,0.8); text-decoration: underline; }
+
+        /* Boutique / Daily Items */
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2a1632;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid #5a305e;
+            text-align: left;
+        }
+        .shop-item span { color: #fce4ec; font-weight: bold; font-size: 14px; }
+        .shop-item button { padding: 8px 12px; font-size: 14px; margin: 0; }
+
+        /* --- STYLES DU JEU --- */
+        #game-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 650px;
+            margin-bottom: 10px;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ff7eb3;
+            background: rgba(30, 16, 36, 0.9);
+            padding: 8px 15px;
+            border-radius: 30px;
+            border: 1px solid #ff4785;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 10px rgba(255, 71, 133, 0.2);
+        }
+
+        /* Style de la photo de profil */
+        .avatar-img {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 2px solid #ff4785;
+            object-fit: cover;
+            background-color: #1e1024;
+            box-shadow: 0 0 8px rgba(255, 71, 133, 0.5);
+            transition: transform 0.2s;
+        }
+        
+        .avatar-img:hover {
+            transform: scale(1.1);
+        }
+
+        .logout-btn {
+            background: #2a1632;
+            color: #ff7eb3;
+            padding: 8px 12px;
+            font-size: 13px;
+            border: 1px solid #ff4785;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 5px;
+        }
+        .logout-btn:hover { background: #ff4785; color: white; box-shadow: 0 0 10px rgba(255, 71, 133, 0.5); }
+
+        h1 {
+            color: #ff7eb3;
+            text-shadow: 0 0 10px rgba(255, 71, 133, 0.8), 0 0 20px rgba(255, 71, 133, 0.4);
+            font-size: 3em;
+            letter-spacing: 2px;
+            margin: 0 0 10px 0;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* JACKPOT DISPLAY */
+        .jackpot-display {
+            background: linear-gradient(90deg, #ff9e00, #ff4785, #ff9e00);
+            background-size: 200% auto;
+            color: white;
+            font-size: 2em;
+            font-weight: 900;
+            padding: 10px 40px;
+            border-radius: 50px;
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+            margin-bottom: 20px;
+            animation: shine 3s linear infinite;
+        }
+
+        @keyframes shine {
+            to { background-position: 200% center; }
+        }
+
+        .slot-machine {
+            background: linear-gradient(#1c1c28, #0a0a12);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8), inset 0 5px 15px rgba(255,255,255,0.05), 0 0 15px rgba(255, 71, 133, 0.1);
+            border: 5px solid #0f0f15;
+            position: relative;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            background-color: #120a17;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            perspective: 1000px;
+        }
+
+        .cell {
+            background-color: #1f1124;
+            border: 2px solid #5a305e;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 55px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            transition: all 0.1s;
+        }
+
+        .spinning {
+            filter: blur(4px);
+            transform: translateY(10px);
+            opacity: 0.8;
+        }
+
+        .win-anim {
+            animation: winPulse 0.6s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        @keyframes winPulse {
+            0% { transform: scale(1); background-color: #1f1124; border-color: #5a305e; }
+            50% { transform: scale(1.15); background-color: #3b2205; border-color: #ff9e00; box-shadow: 0 0 25px #ff9e00; z-index: 50;}
+            100% { transform: scale(1); background-color: #1f1124; border-color: #5a305e; }
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(30, 16, 36, 0.8);
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            border: 1px solid #ff4785;
+            flex-wrap: wrap;
+        }
+
+        .info-box { font-size: 1.3em; font-weight: bold; color: #ff7eb3; text-shadow: 0 0 5px rgba(255, 126, 179, 0.4); }
+
+        .bonus-box { color: #00ffcc; text-shadow: 0 0 5px rgba(0, 255, 204, 0.4); }
+
+        button {
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(to bottom, #ff7eb3, #ff4785);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(255, 71, 133, 0.4);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        button:hover:not(:disabled) { transform: translateY(-3px) scale(1.05); box-shadow: 0 10px 25px rgba(255, 71, 133, 0.8); }
+        button:active:not(:disabled) { transform: translateY(2px) scale(0.95); box-shadow: 0 2px 10px rgba(255, 71, 133, 0.4); }
+        button:disabled { background: #4a2a38; color: #8c6a78; box-shadow: none; cursor: not-allowed; transform: scale(0.98); }
+
+        .auto-active {
+            background: linear-gradient(to bottom, #ff9e00, #cc7a00) !important;
+            box-shadow: 0 0 15px rgba(255, 158, 0, 0.8) !important;
+            color: #fff !important;
+        }
+
+        #win-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4em;
+            font-weight: 900;
+            color: #ffd700;
+            -webkit-text-stroke: 2px #ff4785;
+            text-shadow: 0 0 30px rgba(255, 71, 133, 0.9), 0 0 50px rgba(255, 215, 0, 1);
+            display: none;
+            z-index: 1000;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        
+        .malus-text {
+            color: #ff3333 !important;
+            -webkit-text-stroke: 2px #660000 !important;
+            text-shadow: 0 0 30px rgba(255, 0, 0, 0.9), 0 0 50px rgba(255, 0, 0, 1) !important;
+        }
+
+        .show-win { animation: popUp 3s ease-out forwards; }
+
+        @keyframes popUp {
+            0% { transform: translate(-50%, -20%) scale(0.5); opacity: 0; }
+            10% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            20% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -80%) scale(1.5); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="petals-container"></div>
+
+    <div id="auth-screen">
+        <div class="auth-box" id="login-form">
+            <h2>🌸 Connexion 🌸</h2>
+            <input type="email" id="login-email" placeholder="Adresse e-mail">
+            <input type="password" id="login-password" placeholder="Mot de passe">
+            <button onclick="login()">Se connecter</button>
+            <p>Pas encore de compte ? <br><a onclick="toggleAuthForms()">Créer un compte</a></p>
+        </div>
+
+        <div class="auth-box" id="register-form" style="display: none;">
+            <h2>🌸 Inscription 🌸</h2>
+            <input type="text" id="reg-name" placeholder="Votre Pseudo">
+            <input type="email" id="reg-email" placeholder="Adresse e-mail">
+            <input type="password" id="reg-password" placeholder="Mot de passe">
+            <input type="url" id="reg-avatar" placeholder="URL de votre photo (optionnel)">
+            <button onclick="register()">S'inscrire</button>
+            <p>Déjà un compte ? <br><a onclick="toggleAuthForms()">Se connecter</a></p>
+        </div>
+    </div>
+
+    <div id="admin-screen" style="display: none; z-index: 200;">
+        <div class="auth-box">
+            <h2>🛠️ Panel Admin 🛠️</h2>
+            <input type="email" id="admin-email" placeholder="E-mail du joueur">
+            <input type="number" id="admin-amount" placeholder="Montant de Toins (ex: 1000)">
+            <button onclick="giveCredits()">Envoyer les Toins</button>
+            <p><a onclick="toggleAdmin()">Fermer le panel</a></p>
+        </div>
+    </div>
+
+    <div id="shop-screen" style="display: none; z-index: 150;">
+        <div class="auth-box shop-box">
+            <h2>🛍️ Boutique 🛍️</h2>
+            <p style="color: #ffd700; font-size: 1.1em; margin-bottom: 20px;">Améliorez vos gains !</p>
+            
+            <div class="shop-item">
+                <span>Multiplicateur <strong>x2</strong> (15 min)</span>
+                <button onclick="buyMultiplier(2, 15, 2000)">Acheter (2000 Toins)</button>
+            </div>
+            
+            <div class="shop-item">
+                <span>Multiplicateur <strong>x3</strong> (15 min)</span>
+                <button onclick="buyMultiplier(3, 15, 5000)">Acheter (5000 Toins)</button>
+            </div>
+            
+            <p><a onclick="toggleShop()">Retour au Jeu</a></p>
+        </div>
+    </div>
+
+    <div id="daily-screen" style="display: none; z-index: 150;">
+        <div class="auth-box shop-box">
+            <h2>🎁 Cadeau Quotidien 🎁</h2>
+            <p style="color: #ffd700; font-size: 1.1em; margin-bottom: 20px;">Revenez chaque jour pour récupérer vos crédits gratuits !</p>
+            
+            <div class="shop-item" style="justify-content: center; flex-direction: column; text-align: center; background: transparent; border: none;">
+                <span style="font-size: 2em; margin-bottom: 15px; color: #00ffcc; text-shadow: 0 0 10px rgba(0,255,204,0.5);">+500 Toins</span>
+                <button id="btn-claim-daily" onclick="claimDaily()" style="background: linear-gradient(to bottom, #00ffcc, #00997a);">Récupérer</button>
+            </div>
+            
+            <p><a onclick="toggleDaily()">Retour au Jeu</a></p>
+        </div>
+    </div>
+        
+    <div id="game-container">
+        <div class="header-bar">
+            <div class="player-info">
+                <img id="player-avatar" class="avatar-img" src="" alt="Avatar" onclick="changeAvatar()" style="cursor: pointer;" title="Cliquez pour changer d'avatar">
+                <span id="display-name"></span>
+            </div>
+            <div style="display: flex;">
+                <button id="btn-admin" class="logout-btn" style="border-color: #ffd700; color: #ffd700; display: none;" onclick="toggleAdmin()">Admin</button>
+                <button class="logout-btn" style="border-color: #00ffcc; color: #00ffcc;" onclick="toggleDaily()">Cadeau 🎁</button>
+                <button class="logout-btn" style="border-color: #ff9e00; color: #ff9e00;" onclick="toggleShop()">Boutique 💰</button>
+                <button class="logout-btn" onclick="logout()">Déconnexion</button>
+            </div>
+        </div>
+
+        <h1>🌸 SAKURA FORTUNE 🌸</h1>
+        
+        <div class="jackpot-display">JACKPOT: <span id="jackpot-amount">10000</span> Toins</div>
+
+        <div class="slot-machine">
+            <div class="grid" id="slot-grid"></div>
+        </div>
+                
+        <div class="controls">
+            <div class="info-box">CRÉDIT: <span id="credit">0</span> Toins</div>
+            <button id="spin-button" onclick="spin()">JOUER (20 Toins)</button>
+            <button id="auto-spin-button" onclick="toggleAutoSpin()">AUTO JOUER</button>
+            <div class="info-box">MISE: 20 Toins</div>
+            
+            <div class="info-box bonus-box" id="multiplier-display" style="display: none; width: 100%; text-align: center; margin-top: 5px;">
+                BONUS ACTIF : <span id="current-multiplier">x1</span> (<span id="multiplier-timer">00:00</span>)
+            </div>
+        </div>
+    </div>
+    
+
+    <div id="win-message"></div>
+
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+    <script>
+    
+        // --- CONSTANTES ET DOM ---
+        const ADMIN_EMAIL = 'martinsdamien14@gmail.com';
+        const symbols = ['🌸', '⛩️', '🍣', '🍡', '🍵', '👺']; 
+        const bet = 20;
+
+        // --- CONFIGURATION FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyChwRiT0ea1tq7CzcehlBocq_NqD9ZRn8Y",
+            authDomain: "test-ef047.firebaseapp.com",
+            databaseURL: "https://test-ef047-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "test-ef047",
+            storageBucket: "test-ef047.firebasestorage.app",
+            messagingSenderId: "950352232011",
+            appId: "1:950352232011:web:1742ff9b689f8ef938d7ce"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Mise en cache des éléments DOM (Optimisation)
+        const gridElement = document.getElementById('slot-grid');
+        const spinButton = document.getElementById('spin-button');
+        const autoSpinButton = document.getElementById('auto-spin-button');
+        const winMessage = document.getElementById('win-message');
+        const jackpotDisplay = document.getElementById('jackpot-amount');
+        const creditDisplay = document.getElementById('credit');
+        const playerNameDisplay = document.getElementById('display-name');
+        const playerAvatarImg = document.getElementById('player-avatar');
+
+        // --- VARIABLES GLOBALES ---
+        let currentUserData = null; 
+        let currentUserEmail = null; 
+        let currentJackpot = 10000;
+        let isAutoSpinning = false;
+        let autoSpinTimeout = null;
+        let multiplierInterval = null;
+        let spinInterval = null;
+        let cachedCells = [];
+        function createPetals() {
+            const container = document.getElementById('petals-container');
+            for(let i = 0; i < 30; i++) {
+                let petal = document.createElement('div');
+                petal.classList.add('petal');
+                petal.style.left = Math.random() * 200 + 'vw';
+                petal.style.width = Math.random() * 10 + 10 + 'px';
+                petal.style.height = Math.random() * 10 + 10 + 'px';
+                petal.style.animationDuration = Math.random() * 3 + 4 + 's';
+                petal.style.animationDelay = Math.random() * 5 + 's';
+                container.appendChild(petal);
+            }
+        }
+        createPetals();
+
+        // --- INTERFACES ---
+        function cleanEmail(email) { return email.replace(/\./g, '_'); }
+
+        function toggleAuthForms() {
+            const loginForm = document.getElementById('login-form');
+            const regForm = document.getElementById('register-form');
+            loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
+            regForm.style.display = regForm.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleAdmin() {
+            if (currentUserEmail !== cleanEmail(ADMIN_EMAIL)) return; 
+            const adminScreen = document.getElementById('admin-screen');
+            adminScreen.style.display = adminScreen.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function toggleShop() {
+            const shopScreen = document.getElementById('shop-screen');
+            shopScreen.style.display = shopScreen.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function toggleDaily() {
+            const dailyScreen = document.getElementById('daily-screen');
+            dailyScreen.style.display = dailyScreen.style.display === 'none' ? 'flex' : 'none';
+            if (dailyScreen.style.display === 'flex') checkDailyStatus();
+        }
+
+        // --- AUTHENTIFICATION ---
+        async function register() {
+            const name = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const avatarInput = document.getElementById('reg-avatar').value.trim();
+
+            if (!name || !email || !password) return alert("Veuillez remplir tous les champs obligatoires !");
+            
+            const cEmail = cleanEmail(email);
+            try {
+                const snapshot = await db.ref('users/' + cEmail).once('value');
+                if (snapshot.exists()) return alert("Un compte existe déjà avec cette adresse e-mail.");
+
+                const newUser = { 
+                name: name, 
+                password: password, 
+                credits: 1000, 
+                multiplier: 1, 
+                multiplierExpires: null, 
+                lastDaily: null,
+                avatar: avatarInput 
+            };
+            
+                await db.ref('users/' + cEmail).set(newUser);
+                startSession(cEmail);
+            } catch (e) { alert("Erreur d'inscription : " + e.message); }
+        }
+
+        async function login() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const cEmail = cleanEmail(email);
+
+            try {
+                const snapshot = await db.ref('users/' + cEmail).once('value');
+                const user = snapshot.val();
+                if (user && user.password === password) startSession(cEmail);
+                else alert("E-mail ou mot de passe incorrect.");
+            } catch (e) { alert("Erreur de connexion : " + e.message); }
+        }
+
+        async function startSession(cEmail) {
+            currentUserEmail = cEmail;
+            const snapshot = await db.ref('users/' + cEmail).once('value');
+            currentUserData = snapshot.val();
+
+            document.getElementById('auth-screen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('game-container').style.display = 'flex';
+                document.getElementById('auth-screen').style.opacity = '1';
+            }, 500);
+            
+            // Synchronisation du Jackpot en temps réel pour tous
+            db.ref('jackpot').on('value', (snap) => {
+                currentJackpot = snap.val() || 10000;
+                jackpotDisplay.innerText = currentJackpot;
+            });
+
+            playerNameDisplay.innerText = currentUserData.name;
+            const defaultAvatarUrl = `https://api.dicebear.com/8.x/adventurer/svg?seed=${encodeURIComponent(currentUserData.name)}`;
+            playerAvatarImg.src = currentUserData.avatar ? currentUserData.avatar : defaultAvatarUrl;
+            creditDisplay.innerText = currentUserData.credits;
+
+            const btnAdmin = document.getElementById('btn-admin');
+            btnAdmin.style.display = (cEmail === cleanEmail(ADMIN_EMAIL)) ? 'inline-block' : 'none';
+
+            updateMultiplierUI(); 
+            createGrid();
+        }
+
+        function logout() {
+            currentUserEmail = null;
+            currentUserData = null;
+            db.ref('jackpot').off(); // Arrêter d'écouter le jackpot
+            if (isAutoSpinning) toggleAutoSpin();
+            if (multiplierInterval) clearInterval(multiplierInterval);
+            if (spinInterval) clearInterval(spinInterval);
+            clearTimeout(autoSpinTimeout);
+            
+            document.getElementById('auth-screen').style.display = 'flex';
+            document.getElementById('game-container').style.display = 'none';
+            document.getElementById('admin-screen').style.display = 'none'; 
+            document.getElementById('shop-screen').style.display = 'none'; 
+            document.getElementById('daily-screen').style.display = 'none'; 
+        }
+
+        async function saveState() {
+            if (currentUserEmail && currentUserData) {
+                if(currentUserData.credits < 0) currentUserData.credits = 0;
+                creditDisplay.innerText = currentUserData.credits;
+                await db.ref('users/' + currentUserEmail).update(currentUserData);
+            }
+            await db.ref('jackpot').set(currentJackpot); // Met à jour pour tout le monde via le listener .on()
+            jackpotDisplay.innerText = currentJackpot;
+        }
+
+        async function giveCredits() {
+            if (currentUserEmail !== cleanEmail(ADMIN_EMAIL)) return alert("Accès non autorisé !");
+            const email = document.getElementById('admin-email').value.trim();
+            const cEmail = cleanEmail(email);
+            const amount = parseInt(document.getElementById('admin-amount').value);
+            
+            const snapshot = await db.ref('users/' + cEmail).once('value');
+            if(snapshot.exists() && amount) {
+                let targetCredits = snapshot.val().credits + amount;
+                await db.ref('users/' + cEmail).update({ credits: targetCredits });
+                alert(`Ajout de ${amount} Toins à ${email}`);
+                if(currentUserEmail === cEmail) {
+                    currentUserData.credits = targetCredits;
+                    saveState();
+                }
+            } else {
+                alert("Joueur introuvable ou montant invalide.");
+            }
+        }
+
+        // --- GESTION CADEAU QUOTIDIEN ---
+        function checkDailyStatus() {
+            const today = new Date().toDateString(); 
+            const btn = document.getElementById('btn-claim-daily');
+            
+            if (currentUserData.lastDaily === today) {
+                btn.innerText = "Déjà récupéré aujourd'hui";
+                btn.disabled = true;
+                btn.style.opacity = "0.5";
+            } else {
+                btn.innerText = "Récupérer";
+                btn.disabled = false;
+                btn.style.opacity = "1";
+            }
+        }
+
+        async function claimDaily() {
+            const today = new Date().toDateString();
+            if (currentUserData.lastDaily === today) return alert("Déjà récupéré !");
+
+            currentUserData.credits += 500;
+            currentUserData.lastDaily = today;
+            await saveState();
+            
+            alert("Félicitations ! Vous avez reçu 500 Toins gratuits !");
+            toggleDaily();
+        }
+
+        // --- BOUTIQUE ET MULTIPLICATEURS ---
+        function buyMultiplier(mult, minutes, cost) {
+            if (currentUserData.credits < cost) return alert("Fonds insuffisants.");
+            
+            if (currentUserData.multiplierExpires && Date.now() < currentUserData.multiplierExpires && currentUserData.multiplier >= mult) {
+                return alert("Vous avez déjà un multiplicateur actif égal ou supérieur !");
+            }
+
+            currentUserData.credits -= cost;
+            currentUserData.multiplier = mult;
+            currentUserData.multiplierExpires = Date.now() + (minutes * 60 * 1000);
+            saveState();
+            
+            toggleShop();
+            updateMultiplierUI();
+        }
+
+        function updateMultiplierUI() {
+            if (!currentUserData) return;
+            const display = document.getElementById('multiplier-display');
+            
+            if (currentUserData.multiplierExpires && Date.now() < currentUserData.multiplierExpires) {
+                display.style.display = 'block';
+                document.getElementById('current-multiplier').innerText = `x${currentUserData.multiplier}`;
+                
+                if (multiplierInterval) clearInterval(multiplierInterval);
+                
+                multiplierInterval = setInterval(() => {
+                    let remaining = currentUserData.multiplierExpires - Date.now();
+                    if (remaining <= 0) {
+                        clearInterval(multiplierInterval);
+                        currentUserData.multiplier = 1;
+                        currentUserData.multiplierExpires = null;
+                        saveState();
+                        display.style.display = 'none';
+                        alert("Votre multiplicateur a expiré !");
+                    } else {
+                        let mins = Math.floor(remaining / 60000);
+                        let secs = Math.floor((remaining % 60000) / 1000);
+                        document.getElementById('multiplier-timer').innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                    }
+                }, 1000);
+            } else {
+                currentUserData.multiplier = 1;
+                currentUserData.multiplierExpires = null;
+                display.style.display = 'none';
+            }
+        }
+
+        // --- UTILITAIRES JEU ---
+        function getRandomWin(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function toggleAutoSpin() {
+            isAutoSpinning = !isAutoSpinning;
+            
+            if (isAutoSpinning) {
+                autoSpinButton.innerText = "STOP AUTO";
+                autoSpinButton.classList.add('auto-active');
+                if (!spinButton.disabled) spin();
+            } else {
+                autoSpinButton.innerText = "AUTO JOUER";
+                autoSpinButton.classList.remove('auto-active');
+                clearTimeout(autoSpinTimeout);
+            }
+        }
+
+        function processNextAutoSpin(delay) {
+            if (isAutoSpinning) {
+                autoSpinTimeout = setTimeout(() => {
+                    if (isAutoSpinning && !spinButton.disabled) spin();
+                }, delay);
+            }
+        }
+
+        function createGrid() {
+            gridElement.innerHTML = ''; 
+            cachedCells = [];
+            for (let i = 0; i < 15; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                gridElement.appendChild(cell);
+                cachedCells.push(cell);
+            }
+        }
+
+        function spin() {
+            if (currentUserData.credits < bet) {
+                if (isAutoSpinning) toggleAutoSpin();
+                return alert("Crédit insuffisant !");
+            }
+
+            // Utilise les cellules mises en cache
+            cachedCells.forEach(c => c.classList.remove('win-anim'));
+            winMessage.style.display = 'none';
+            winMessage.className = ''; 
+
+            currentUserData.credits -= bet;
+            currentJackpot += 2;
+            saveState();
+            
+            spinButton.disabled = true;
+            let spins = 0;
+            const maxSpins = 20; 
+            cachedCells.forEach(cell => cell.classList.add('spinning'));
+
+            // Nettoyer l'interval s'il existe déjà
+            if (spinInterval) clearInterval(spinInterval);
+
+            spinInterval = setInterval(() => {
+                cachedCells.forEach(cell => {
+                    cell.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                });
+                spins++;
+                
+                if (spins >= maxSpins) {
+                    clearInterval(spinInterval);
+                    cachedCells.forEach(cell => cell.classList.remove('spinning'));
+                    evaluateRealGrid(cachedCells); 
+                }
+            }, 60); 
+        }
+
+        function evaluateRealGrid(cells) {
+            let symbolCounts = {};
+            let symbolElements = {};
+
+            cells.forEach(cell => {
+                let sym = cell.innerText;
+                if (!symbolCounts[sym]) {
+                    symbolCounts[sym] = 0;
+                    symbolElements[sym] = [];
+                }
+                symbolCounts[sym]++;
+                symbolElements[sym].push(cell);
+            });
+
+            let maxCount = 0;
+            let winningSymbol = '';
+
+            for (let sym in symbolCounts) {
+                if (symbolCounts[sym] > maxCount) {
+                    maxCount = symbolCounts[sym];
+                    winningSymbol = sym;
+                }
+            }
+
+            let totalWin = 0;
+            let isJackpotHit = false;
+
+            if (maxCount >= 5) {
+                if (winningSymbol === '🌸' && maxCount >= 8) {
+                    totalWin = currentJackpot;
+                    isJackpotHit = true;
+                } else {
+                    if (maxCount === 5) totalWin = getRandomWin(bet, bet * 3);
+                    else if (maxCount === 6) totalWin = getRandomWin(bet * 3, bet * 6);
+                    else if (maxCount === 7) totalWin = getRandomWin(bet * 6, bet * 12);
+                    else if (maxCount === 8) totalWin = getRandomWin(bet * 12, bet * 25);
+                    else if (maxCount >= 9) totalWin = getRandomWin(bet * 25, bet * 50);
+                }
+            }
+
+            let activeMultiplier = (currentUserData.multiplierExpires && Date.now() < currentUserData.multiplierExpires) ? (currentUserData.multiplier || 1) : 1;
+
+            if (totalWin > 0) {
+                totalWin = totalWin * activeMultiplier;
+                symbolElements[winningSymbol].forEach(el => el.classList.add('win-anim'));
+
+                if (!isJackpotHit && Math.random() < 0.10) {
+                    let penalty = totalWin * 2; 
+                    currentUserData.credits -= penalty;
+                    winMessage.innerText = `👺 MALUS ! -${penalty} Toins 👺`;
+                    winMessage.classList.add('malus-text');
+                } else {
+                    currentUserData.credits += totalWin;
+                    if (isJackpotHit) {
+                        let text = `🎰 JACKPOT !!! +${totalWin} Toins 🎰`;
+                        if(activeMultiplier > 1) text += ` (x${activeMultiplier})`;
+                        winMessage.innerText = text;
+                        currentJackpot = 10000; 
+                    } else {
+                        let text = `+ ${totalWin} Toins`;
+                        if(activeMultiplier > 1) text += ` (x${activeMultiplier})`;
+                        winMessage.innerText = text;
+                    }
+                }
+                
+                saveState();
+                winMessage.style.display = 'block';
+                void winMessage.offsetWidth; // Force le reflow pour relancer l'animation
+                winMessage.classList.add('show-win');
+
+                setTimeout(() => {
+                    winMessage.style.display = 'none';
+                    winMessage.classList.remove('show-win', 'malus-text');
+                    symbolElements[winningSymbol].forEach(c => c.classList.remove('win-anim'));
+                    spinButton.disabled = false;
+                    processNextAutoSpin(500);
+                }, 3000);
+
+            } else {
+                // Perte
+                spinButton.disabled = false;
+                processNextAutoSpin(300);
+            }
+        }
+
+        // --- CHANGEMENT D'AVATAR ---
+        async function changeAvatar() {
+            if (!currentUserEmail) return; // Sécurité : vérifier qu'un joueur est connecté
+
+            const newAvatarUrl = prompt("🌸 Entrez l'URL de votre nouvelle image de profil :");
+            
+            if (newAvatarUrl !== null && newAvatarUrl.trim() !== "") {
+                currentUserData.avatar = newAvatarUrl.trim();
+                document.getElementById('player-avatar').src = currentUserData.avatar;
+                
+                await db.ref('users/' + currentUserEmail).update({ avatar: currentUserData.avatar });
+            }
+        }
+        
+    </script>
+</body>
+</html>
