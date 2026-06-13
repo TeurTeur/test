@@ -6,8 +6,11 @@
     <title>TeurTeur-jackpot</title>
     <style>
         body {
-            /* Fond sombre violet/noir */
-            background: linear-gradient(135deg, #0d0514 0%, #1a0b1c 100%);
+            /* --- FOND PRINCIPAL MODIFIÉ --- */
+            /* Pour mettre une image, effacez la ligne du dessous et utilisez : 
+               background: url('LIEN_DE_VOTRE_IMAGE.jpg') no-repeat center center fixed; background-size: cover; */
+            background: url('https://i.imgur.com/gUt9ImC.jpeg') no-repeat center center fixed;
+            background-size: cover;
             color: #fce4ec;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
@@ -96,19 +99,23 @@
 
         /* --- STYLES DES ÉCRANS --- */
         #auth-screen, #admin-screen, #shop-screen, #daily-screen, #transfer-screen, #news-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(13, 5, 20, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            backdrop-filter: blur(8px);
-            transition: opacity 0.5s ease;
-        }
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* --- FOND DES MENUS MODIFIÉ --- */
+    /* On baisse l'opacité (0.3 au lieu de 0.95) pour rendre le fond transparent */
+    background: rgba(15, 23, 42, 0.3); 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    /* On augmente un peu le flou pour un meilleur effet visuel */
+    backdrop-filter: blur(15px); 
+    -webkit-backdrop-filter: blur(15px); /* Ajouté pour la compatibilité Safari */
+    transition: opacity 0.5s ease;
+}
 
         .auth-box {
             background: #1e1024;
