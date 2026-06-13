@@ -449,7 +449,9 @@
     <div id="game-container">
         <div class="header-bar">
             <div class="player-info">
-                <img id="player-avatar" class="avatar-img" src="" alt="Avatar" onclick="changeAvatar()" style="cursor: pointer;" title="Cliquez pour changer d'avatar">
+                <input type="file" id="avatar-upload" accept="image/png, image/jpeg" style="display: none;" onchange="handleAvatarUpload(event)">
+                <img id="player-avatar" class="avatar-img" src="" alt="Avatar" onclick="document.getElementById('avatar-upload').click()" style="cursor: pointer;" title="Cliquez pour importer un avatar">
+                
                 <span id="display-name"></span>
             </div>
             <div class="action-buttons">
@@ -968,18 +970,40 @@
             }
         }
 
-        // --- CHANGEMENT D'AVATAR ---
-        async function changeAvatar() {
+        // --- CHANGEMENT D'AVATAR (NOUVEAU SYSTÈME) ---
+        async function handleAvatarUpload(event) {
             if (!currentUserEmail) return; // Sécurité : vérifier qu'un joueur est connecté
 
-            const newAvatarUrl = prompt("🌸 Entrez l'URL de votre nouvelle image de profil :");
+            const file = event.target.files[0];
             
-            if (newAvatarUrl !== null && newAvatarUrl.trim() !== "") {
-                currentUserData.avatar = newAvatarUrl.trim();
+            // On vérifie qu'un fichier a bien été sélectionné
+            if (!file) return;
+
+            // Optionnel : Limiter la taille (ex: 2 Mo maximum) pour ne pas surcharger Firebase
+            if (file.size > 2 * 1024 * 1024) {
+                return alert("L'image est trop lourde ! Veuillez choisir une image de moins de 2 Mo.");
+            }
+
+            const reader = new FileReader();
+            
+            // Quand le fichier est lu, on le convertit et on met à jour la base de données
+            reader.onload = async function(e) {
+                const base64Image = e.target.result;
+                
+                // Mise à jour de l'affichage local
+                currentUserData.avatar = base64Image;
                 document.getElementById('player-avatar').src = currentUserData.avatar;
                 
-                await db.ref('users/' + currentUserEmail).update({ avatar: currentUserData.avatar });
-            }
+                // Sauvegarde dans Firebase
+                try {
+                    await db.ref('users/' + currentUserEmail).update({ avatar: currentUserData.avatar });
+                } catch (error) {
+                    alert("Erreur lors de la sauvegarde de l'image : " + error.message);
+                }
+            };
+
+            // Lance la lecture du fichier en format Base64
+            reader.readAsDataURL(file);
         }
         
     </script>
