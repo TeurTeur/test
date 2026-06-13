@@ -190,7 +190,7 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            max-width: 850px; /* Modifié pour plus d'espace */
+            max-width: 850px; 
             padding: 10px;
             box-sizing: border-box;
             margin-bottom: 20px;
@@ -252,32 +252,13 @@
             text-shadow: 0 0 10px rgba(255, 71, 133, 0.8), 0 0 20px rgba(255, 71, 133, 0.4);
             font-size: 3em;
             letter-spacing: 2px;
-            margin: 0 0 10px 0;
+            margin: 0 0 20px 0;
             animation: float 3s ease-in-out infinite;
         }
 
         @keyframes float {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
-        }
-
-        /* JACKPOT DISPLAY */
-        .jackpot-display {
-            background: linear-gradient(90deg, #ff9e00, #ff4785, #ff9e00);
-            background-size: 200% auto;
-            color: white;
-            font-size: 2em;
-            font-weight: 900;
-            padding: 10px 40px;
-            border-radius: 50px;
-            border: 3px solid #ffd700;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
-            margin-bottom: 20px;
-            animation: shine 3s linear infinite;
-        }
-
-        @keyframes shine {
-            to { background-position: 200% center; }
         }
 
         .slot-machine {
@@ -409,8 +390,7 @@
         @media (max-width: 600px) {
             h1 { font-size: 2em; }
             .header-bar { flex-direction: column; gap: 15px; }
-            .action-buttons { justify-content: center; } /* Centre les boutons sur mobile */
-            .jackpot-display { font-size: 1.2em; padding: 10px 20px; }
+            .action-buttons { justify-content: center; }
             .controls { border-radius: 20px; padding: 10px; gap: 10px; }
             button { padding: 10px 20px; font-size: 14px; }
             .player-info { font-size: 1em; }
@@ -536,8 +516,6 @@
 
         <h1>🌸 SAKURA FORTUNE 🌸</h1>
         
-        <div class="jackpot-display">JACKPOT: <span id="jackpot-amount">10000</span> Toins</div>
-
         <div class="slot-machine">
             <div class="grid" id="slot-grid"></div>
         </div>
@@ -554,7 +532,6 @@
         </div>
     </div>
     
-
     <div id="win-message"></div>
 
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
@@ -586,7 +563,6 @@
         const spinButton = document.getElementById('spin-button');
         const autoSpinButton = document.getElementById('auto-spin-button');
         const winMessage = document.getElementById('win-message');
-        const jackpotDisplay = document.getElementById('jackpot-amount');
         const creditDisplay = document.getElementById('credit');
         const playerNameDisplay = document.getElementById('display-name');
         const playerAvatarImg = document.getElementById('player-avatar');
@@ -708,10 +684,9 @@
                 document.getElementById('auth-screen').style.opacity = '1';
             }, 500);
             
-            // Synchronisation du Jackpot en temps réel pour tous
+            // Synchronisation du Jackpot en arrière-plan pour la logique des gains
             db.ref('jackpot').on('value', (snap) => {
                 currentJackpot = snap.val() || 10000;
-                jackpotDisplay.innerText = currentJackpot;
             });
 
             // Synchronisation de l'actualité en temps réel
@@ -780,7 +755,6 @@
                 await db.ref('users/' + currentUserEmail).update(currentUserData);
             }
             await db.ref('jackpot').set(currentJackpot); 
-            jackpotDisplay.innerText = currentJackpot;
         }
 
         async function giveCredits() {
