@@ -14,9 +14,10 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
             position: relative;
             
             /* Bloquer la sélection */
@@ -43,7 +44,7 @@
         }
 
         /* --- STYLES DES ÉCRANS --- */
-        #auth-screen, #admin-screen, #shop-screen, #daily-screen {
+        #auth-screen, #admin-screen, #shop-screen, #daily-screen, #transfer-screen {
             position: absolute;
             top: 0;
             left: 0;
@@ -72,7 +73,8 @@
         }
 
         .shop-box {
-            width: 400px;
+            width: 90%;
+            max-width: 400px;
         }
 
         .auth-box:hover {
@@ -138,6 +140,8 @@
             align-items: center;
             width: 100%;
             max-width: 650px;
+            padding: 10px;
+            box-sizing: border-box;
             margin-bottom: 10px;
         }
 
@@ -228,14 +232,15 @@
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(5, 100px);
-            grid-template-rows: repeat(3, 100px);
+            grid-template-columns: repeat(5, minmax(50px, 100px));
+            grid-template-rows: repeat(3, minmax(50px, 100px));
             gap: 5px;
             background-color: #120a17;
             padding: 10px;
             border-radius: 8px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
             perspective: 1000px;
+            max-width: 95vw;
         }
 
         .cell {
@@ -245,7 +250,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 55px;
+            font-size: clamp(30px, 8vw, 55px);
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.5);
             transition: all 0.1s;
@@ -340,6 +345,18 @@
             80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
             100% { transform: translate(-50%, -80%) scale(1.5); opacity: 0; }
         }
+
+        /* RESPONSIVITÉ SMARTPHONE */
+        @media (max-width: 600px) {
+            h1 { font-size: 2em; }
+            .header-bar { flex-direction: column; gap: 15px; }
+            .jackpot-display { font-size: 1.2em; padding: 10px 20px; }
+            .controls { border-radius: 20px; padding: 10px; gap: 10px; }
+            button { padding: 10px 20px; font-size: 14px; }
+            .player-info { font-size: 1em; }
+            .grid { gap: 3px; padding: 5px; }
+            .cell { border-width: 1px; }
+        }
     </style>
 </head>
 <body>
@@ -395,6 +412,17 @@
         </div>
     </div>
 
+    <div id="transfer-screen" style="display: none; z-index: 150;">
+        <div class="auth-box">
+            <h2>💸 Transférer des Toins 💸</h2>
+            <p style="color: #d1b3c4;">Envoyez vos richesses à un ami !</p>
+            <input type="email" id="transfer-email" placeholder="E-mail du destinataire">
+            <input type="number" id="transfer-amount" placeholder="Montant">
+            <button onclick="sendToins()">Confirmer le transfert</button>
+            <p><a onclick="toggleTransfer()">Annuler</a></p>
+        </div>
+    </div>
+
     <div id="daily-screen" style="display: none; z-index: 150;">
         <div class="auth-box shop-box">
             <h2>🎁 Cadeau Quotidien 🎁</h2>
@@ -415,8 +443,9 @@
                 <img id="player-avatar" class="avatar-img" src="" alt="Avatar" onclick="changeAvatar()" style="cursor: pointer;" title="Cliquez pour changer d'avatar">
                 <span id="display-name"></span>
             </div>
-            <div style="display: flex;">
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 5px;">
                 <button id="btn-admin" class="logout-btn" style="border-color: #ffd700; color: #ffd700; display: none;" onclick="toggleAdmin()">Admin</button>
+                <button class="logout-btn" style="border-color: #ff4785; color: #ff4785;" onclick="toggleTransfer()">Envoyer 💸</button>
                 <button class="logout-btn" style="border-color: #00ffcc; color: #00ffcc;" onclick="toggleDaily()">Cadeau 🎁</button>
                 <button class="logout-btn" style="border-color: #ff9e00; color: #ff9e00;" onclick="toggleShop()">Boutique 💰</button>
                 <button class="logout-btn" onclick="logout()">Déconnexion</button>
@@ -526,6 +555,11 @@
             shopScreen.style.display = shopScreen.style.display === 'none' ? 'flex' : 'none';
         }
 
+        function toggleTransfer() {
+            const transferScreen = document.getElementById('transfer-screen');
+            transferScreen.style.display = transferScreen.style.display === 'none' ? 'flex' : 'none';
+        }
+
         function toggleDaily() {
             const dailyScreen = document.getElementById('daily-screen');
             dailyScreen.style.display = dailyScreen.style.display === 'none' ? 'flex' : 'none';
@@ -618,6 +652,7 @@
             document.getElementById('admin-screen').style.display = 'none'; 
             document.getElementById('shop-screen').style.display = 'none'; 
             document.getElementById('daily-screen').style.display = 'none'; 
+            document.getElementById('transfer-screen').style.display = 'none'; 
         }
 
         async function saveState() {
@@ -648,6 +683,43 @@
             } else {
                 alert("Joueur introuvable ou montant invalide.");
             }
+        }
+
+        // --- SYSTEME DE TRANSFERT ---
+        async function sendToins() {
+            const email = document.getElementById('transfer-email').value.trim();
+            const amount = parseInt(document.getElementById('transfer-amount').value);
+            
+            if (!email || isNaN(amount) || amount <= 0) {
+                return alert("Veuillez entrer un email valide et un montant positif.");
+            }
+
+            const cEmailDest = cleanEmail(email);
+            
+            if (cEmailDest === currentUserEmail) {
+                return alert("Vous ne pouvez pas vous envoyer des Toins à vous-même !");
+            }
+
+            if (currentUserData.credits < amount) {
+                return alert("Crédits insuffisants.");
+            }
+
+            try {
+                const snapshot = await db.ref('users/' + cEmailDest).once('value');
+                if (!snapshot.exists()) {
+                    return alert("Ce joueur n'existe pas.");
+                }
+
+                const targetUser = snapshot.val();
+                
+                // Transaction simple
+                currentUserData.credits -= amount;
+                await db.ref('users/' + cEmailDest).update({ credits: targetUser.credits + amount });
+                await saveState();
+                
+                alert(`Transfert de ${amount} Toins réussi vers ${email} !`);
+                toggleTransfer();
+            } catch (e) { alert("Erreur lors du transfert : " + e.message); }
         }
 
         // --- GESTION CADEAU QUOTIDIEN ---
