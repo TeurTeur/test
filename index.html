@@ -43,6 +43,50 @@
             100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
         }
 
+        /* --- BANNIÈRE D'ACTUALITÉ --- */
+        #news-banner {
+            width: 100%;
+            max-width: 850px;
+            background: rgba(30, 16, 36, 0.9);
+            border: 1px solid #ff4785;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            box-shadow: 0 0 15px rgba(255, 71, 133, 0.3);
+        }
+
+        .news-icon {
+            font-size: 1.5em;
+            margin-right: 15px;
+        }
+
+        #news-text {
+            color: #fce4ec;
+            font-size: 1.1em;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255, 126, 179, 0.5);
+        }
+
+        #admin-news {
+            width: 90%;
+            background: #2a1632;
+            color: #fce4ec;
+            padding: 10px;
+            border: 2px solid #5a305e;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            resize: vertical;
+            outline: none;
+            font-family: inherit;
+        }
+        #admin-news:focus {
+            border-color: #ff4785;
+            box-shadow: 0 0 12px rgba(255, 71, 133, 0.5);
+        }
+
         /* --- STYLES DES ÉCRANS --- */
         #auth-screen, #admin-screen, #shop-screen, #daily-screen, #transfer-screen {
             position: absolute;
@@ -333,7 +377,7 @@
             -webkit-text-stroke: 2px #ff4785;
             text-shadow: 0 0 30px rgba(255, 71, 133, 0.9), 0 0 50px rgba(255, 215, 0, 1);
             display: none;
-            z-index: 1000;
+            z-index: 10;
             pointer-events: none;
             white-space: nowrap;
         }
@@ -398,6 +442,12 @@
             <input type="email" id="admin-email" placeholder="E-mail du joueur">
             <input type="number" id="admin-amount" placeholder="Montant de Toins (ex: 1000)">
             <button onclick="giveCredits()">Envoyer les Toins</button>
+            
+            <hr style="border-color: #5a305e; margin: 20px 0;">
+            <h2>📢 Actualité</h2>
+            <textarea id="admin-news" rows="3" placeholder="Tapez le message de mise à jour ici... (Laissez vide pour masquer)"></textarea>
+            <button onclick="publishNews()">Publier l'actualité</button>
+
             <p><a onclick="toggleAdmin()">Fermer le panel</a></p>
         </div>
     </div>
@@ -461,6 +511,11 @@
                 <button class="logout-btn" style="border-color: #ff9e00; color: #ff9e00;" onclick="toggleShop()">Boutique 💰</button>
                 <button class="logout-btn" onclick="logout()">Déconnexion</button>
             </div>
+        </div>
+
+        <div id="news-banner" style="display: none;">
+            <span class="news-icon">📢</span>
+            <marquee id="news-text"></marquee>
         </div>
 
         <h1>🌸 SAKURA FORTUNE 🌸</h1>
@@ -529,6 +584,7 @@
         let multiplierInterval = null;
         let spinInterval = null;
         let cachedCells = [];
+
         function createPetals() {
             const container = document.getElementById('petals-container');
             for(let i = 0; i < 30; i++) {
@@ -636,6 +692,27 @@
                 jackpotDisplay.innerText = currentJackpot;
             });
 
+            // Synchronisation de l'actualité en temps réel
+            db.ref('settings/newsMessage').on('value', (snap) => {
+                const message = snap.val();
+                const banner = document.getElementById('news-banner');
+                const text = document.getElementById('news-text');
+                const adminInput = document.getElementById('admin-news');
+                
+                // Met à jour le champ admin si c'est l'admin qui se connecte
+                if (adminInput && cEmail === cleanEmail(ADMIN_EMAIL)) {
+                    adminInput.value = message || "";
+                }
+                
+                // Affiche ou masque la bannière selon s'il y a un message
+                if (message && message.trim() !== '') {
+                    text.innerText = message;
+                    banner.style.display = 'flex';
+                } else {
+                    banner.style.display = 'none';
+                }
+            });
+
             playerNameDisplay.innerText = currentUserData.name;
             const defaultAvatarUrl = `https://api.dicebear.com/8.x/adventurer/svg?seed=${encodeURIComponent(currentUserData.name)}`;
             playerAvatarImg.src = currentUserData.avatar ? currentUserData.avatar : defaultAvatarUrl;
@@ -652,6 +729,8 @@
             currentUserEmail = null;
             currentUserData = null;
             db.ref('jackpot').off(); // Arrêter d'écouter le jackpot
+            db.ref('settings/newsMessage').off(); // Arrêter d'écouter les actualités
+            
             if (isAutoSpinning) toggleAutoSpin();
             if (multiplierInterval) clearInterval(multiplierInterval);
             if (spinInterval) clearInterval(spinInterval);
@@ -692,6 +771,20 @@
                 }
             } else {
                 alert("Joueur introuvable ou montant invalide.");
+            }
+        }
+
+        async function publishNews() {
+            if (currentUserEmail !== cleanEmail(ADMIN_EMAIL)) return alert("Accès non autorisé !");
+            
+            const newsMessage = document.getElementById('admin-news').value.trim();
+            
+            try {
+                // Enregistre le message dans Firebase
+                await db.ref('settings/newsMessage').set(newsMessage);
+                alert("Le message d'actualité a été publié avec succès !");
+            } catch (e) {
+                alert("Erreur lors de la publication : " + e.message);
             }
         }
 
