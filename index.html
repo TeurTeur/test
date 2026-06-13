@@ -56,6 +56,13 @@
             align-items: center;
             box-sizing: border-box;
             box-shadow: 0 0 15px rgba(255, 71, 133, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #news-banner:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(255, 71, 133, 0.6);
         }
 
         .news-icon {
@@ -88,7 +95,7 @@
         }
 
         /* --- STYLES DES ÉCRANS --- */
-        #auth-screen, #admin-screen, #shop-screen, #daily-screen, #transfer-screen {
+        #auth-screen, #admin-screen, #shop-screen, #daily-screen, #transfer-screen, #news-screen {
             position: absolute;
             top: 0;
             left: 0;
@@ -436,6 +443,15 @@
         </div>
     </div>
 
+    <div id="news-screen" style="display: none; z-index: 250;">
+        <div class="auth-box" style="width: 80%; max-width: 600px;">
+            <h2>📢 Actualité 📢</h2>
+            <div id="full-news-content" style="text-align: left; margin: 20px 0; font-size: 1.1em; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; color: #fce4ec;">
+                </div>
+            <button onclick="toggleNews()">Fermer</button>
+        </div>
+    </div>
+
     <div id="admin-screen" style="display: none; z-index: 200;">
         <div class="auth-box">
             <h2>🛠️ Panel Admin 🛠️</h2>
@@ -445,7 +461,7 @@
             
             <hr style="border-color: #5a305e; margin: 20px 0;">
             <h2>📢 Actualité</h2>
-            <textarea id="admin-news" rows="3" placeholder="Tapez le message de mise à jour ici... (Laissez vide pour masquer)"></textarea>
+            <textarea id="admin-news" rows="4" placeholder="Tapez le message de mise à jour ici... (Laissez vide pour masquer)"></textarea>
             <button onclick="publishNews()">Publier l'actualité</button>
 
             <p><a onclick="toggleAdmin()">Fermer le panel</a></p>
@@ -513,7 +529,7 @@
             </div>
         </div>
 
-        <div id="news-banner" style="display: none;">
+        <div id="news-banner" style="display: none;" onclick="toggleNews()" title="Cliquez pour lire le message complet">
             <span class="news-icon">📢</span>
             <marquee id="news-text"></marquee>
         </div>
@@ -632,6 +648,12 @@
             if (dailyScreen.style.display === 'flex') checkDailyStatus();
         }
 
+        // Nouvelle fonction pour afficher/masquer la popup d'actualité complète
+        function toggleNews() {
+            const newsScreen = document.getElementById('news-screen');
+            newsScreen.style.display = newsScreen.style.display === 'none' ? 'flex' : 'none';
+        }
+
         // --- AUTHENTIFICATION ---
         async function register() {
             const name = document.getElementById('reg-name').value.trim();
@@ -697,6 +719,7 @@
                 const message = snap.val();
                 const banner = document.getElementById('news-banner');
                 const text = document.getElementById('news-text');
+                const fullText = document.getElementById('full-news-content');
                 const adminInput = document.getElementById('admin-news');
                 
                 // Met à jour le champ admin si c'est l'admin qui se connecte
@@ -704,12 +727,17 @@
                     adminInput.value = message || "";
                 }
                 
-                // Affiche ou masque la bannière selon s'il y a un message
+                // Affiche ou masque la bannière et met à jour la popup
                 if (message && message.trim() !== '') {
                     text.innerText = message;
+                    fullText.innerText = message; // Met à jour le texte de la popup
                     banner.style.display = 'flex';
                 } else {
                     banner.style.display = 'none';
+                    // Si la popup était ouverte et que le message est supprimé, on la ferme
+                    if (document.getElementById('news-screen').style.display === 'flex') {
+                        toggleNews();
+                    }
                 }
             });
 
@@ -728,8 +756,8 @@
         function logout() {
             currentUserEmail = null;
             currentUserData = null;
-            db.ref('jackpot').off(); // Arrêter d'écouter le jackpot
-            db.ref('settings/newsMessage').off(); // Arrêter d'écouter les actualités
+            db.ref('jackpot').off(); 
+            db.ref('settings/newsMessage').off(); 
             
             if (isAutoSpinning) toggleAutoSpin();
             if (multiplierInterval) clearInterval(multiplierInterval);
@@ -742,6 +770,7 @@
             document.getElementById('shop-screen').style.display = 'none'; 
             document.getElementById('daily-screen').style.display = 'none'; 
             document.getElementById('transfer-screen').style.display = 'none'; 
+            document.getElementById('news-screen').style.display = 'none'; 
         }
 
         async function saveState() {
@@ -750,7 +779,7 @@
                 creditDisplay.innerText = currentUserData.credits;
                 await db.ref('users/' + currentUserEmail).update(currentUserData);
             }
-            await db.ref('jackpot').set(currentJackpot); // Met à jour pour tout le monde via le listener .on()
+            await db.ref('jackpot').set(currentJackpot); 
             jackpotDisplay.innerText = currentJackpot;
         }
 
@@ -780,7 +809,6 @@
             const newsMessage = document.getElementById('admin-news').value.trim();
             
             try {
-                // Enregistre le message dans Firebase
                 await db.ref('settings/newsMessage').set(newsMessage);
                 alert("Le message d'actualité a été publié avec succès !");
             } catch (e) {
@@ -961,7 +989,6 @@
             const maxSpins = 20; 
             cachedCells.forEach(cell => cell.classList.add('spinning'));
 
-            // Nettoyer l'interval s'il existe déjà
             if (spinInterval) clearInterval(spinInterval);
 
             spinInterval = setInterval(() => {
@@ -1065,37 +1092,27 @@
 
         // --- CHANGEMENT D'AVATAR (NOUVEAU SYSTÈME) ---
         async function handleAvatarUpload(event) {
-            if (!currentUserEmail) return; // Sécurité : vérifier qu'un joueur est connecté
+            if (!currentUserEmail) return; 
 
             const file = event.target.files[0];
-            
-            // On vérifie qu'un fichier a bien été sélectionné
             if (!file) return;
 
-            // Optionnel : Limiter la taille (ex: 2 Mo maximum) pour ne pas surcharger Firebase
             if (file.size > 2 * 1024 * 1024) {
                 return alert("L'image est trop lourde ! Veuillez choisir une image de moins de 2 Mo.");
             }
 
             const reader = new FileReader();
-            
-            // Quand le fichier est lu, on le convertit et on met à jour la base de données
             reader.onload = async function(e) {
                 const base64Image = e.target.result;
-                
-                // Mise à jour de l'affichage local
                 currentUserData.avatar = base64Image;
                 document.getElementById('player-avatar').src = currentUserData.avatar;
                 
-                // Sauvegarde dans Firebase
                 try {
                     await db.ref('users/' + currentUserEmail).update({ avatar: currentUserData.avatar });
                 } catch (error) {
                     alert("Erreur lors de la sauvegarde de l'image : " + error.message);
                 }
             };
-
-            // Lance la lecture du fichier en format Base64
             reader.readAsDataURL(file);
         }
         
